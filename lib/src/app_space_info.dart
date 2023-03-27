@@ -2,7 +2,7 @@ class AppSpaceInfo {
   final int appUsedSpace;
   final int cacheSpace;
   final int userDataSpace;
-  late int totalAppUsedSpace;
+  late final int? totalAppUsedSpace;
 
   AppSpaceInfo({
     required this.appUsedSpace,
@@ -18,6 +18,14 @@ class AppSpaceInfo {
       cacheSpace: map['cacheSpace'] as int,
       userDataSpace: map['userDataSpace'] as int,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'appUsedSpace': appUsedSpace,
+      'cacheSpace': cacheSpace,
+      'userDataSpace': userDataSpace,
+    };
   }
 
   @override
