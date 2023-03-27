@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/services.dart';
 
 class StorageSpace {
@@ -45,6 +46,7 @@ class StorageSpace {
     freeSize = _toHuman(free, fractionDigits);
     totalSize = _toHuman(total, fractionDigits);
     usedSize = _toHuman(used, fractionDigits);
+    print('freeSize: $total');
     usageValue = used / total;
     usagePercent = (usageValue * 100).round();
     lowOnSpace = free <= lowOnSpaceThreshold;
@@ -87,7 +89,7 @@ List<String> _units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 /// * 43 MB
 /// * 21.1 GB
 String _toHuman(int bytes, int fractionDigits) {
-  int multiplier = 1024;
+  int multiplier = 1000;
   int lowerBoundary = 1;
   int upperBoundary = multiplier;
   for (var i = 0; i < _units.length; i++) {

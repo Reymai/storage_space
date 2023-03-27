@@ -1,5 +1,8 @@
 package flowmobile.storage_space
 
+import android.app.usage.StorageStatsManager
+import android.content.Context
+import android.os.*
 import androidx.annotation.NonNull;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -8,8 +11,12 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import  android.os.StatFs
-import  android.os.Environment
+import android.os.storage.StorageManager
+import android.os.storage.StorageVolume
+import android.util.Log
+import androidx.annotation.RequiresApi
+import java.io.IOException
+import java.util.UUID
 
 /** StorageSpacePlugin */
 public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
@@ -18,10 +25,12 @@ public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
+  private lateinit var context: Context
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "storage_space")
     channel.setMethodCallHandler(this);
+    context = flutterPluginBinding.applicationContext
   }
 
   // This static function is optional and equivalent to onAttachedToEngine. It supports the old
@@ -41,21 +50,60 @@ public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
+  @RequiresApi(Build.VERSION_CODES.O)
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-    if(call.method == "getFreeSpace"){
-      val stat = StatFs(Environment.getDataDirectory().getPath())
-      val bytesAvailable = stat.getFreeBytes()
-      result.success(bytesAvailable)
-    }
-    else if(call.method == "getTotalSpace"){
-      val stat = StatFs(Environment.getDataDirectory().getPath())
-      val bytesTotal = stat.getTotalBytes()
-      result.success(bytesTotal)
-    }
-    else {
-      result.notImplemented()
+    when (call.method) {
+        "getFreeSpace" -> {
+          val storageStat = getStorageStats()
+          val freeSpace = storageStat.first().freeSpace
+          result.success(freeSpace)
+        }
+        "getTotalSpace" -> {
+          // using getTotalSpace() get total space of internal storage
+          val storageStat = getStorageStats()
+          val totalSpace = storageStat.first().totalSpace
+          result.success(totalSpace)
+        }
+        else -> {
+          result.notImplemented()
+        }
     }
   }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private fun getStorageStats() : List<VolumeStats> {
+    val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+    val extDirs = Environment.getExternalStorageDirectory().listFiles()
+    val storageVolumes = mutableListOf<VolumeStats>()
+    extDirs.forEach {
+      file ->
+      val storageVolume = storageManager.getStorageVolume(file)
+      if (storageVolume == null) {
+        Log.d("StorageSpacePlugin", "Could not get storage volume for ${file.path}")
+      } else {
+        val totalSpace: Long
+        val freeSpace: Long
+
+        if (storageVolume.isPrimary) {
+          val uuid = StorageManager.UUID_DEFAULT
+          val storageStatsManager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+          totalSpace = storageStatsManager.getTotalBytes(uuid) / 1
+          freeSpace = storageStatsManager.getFreeBytes(uuid)
+        } else {
+          totalSpace = file.totalSpace
+          freeSpace = file.freeSpace
+        }
+        storageVolumes.add(VolumeStats(storageVolume, totalSpace, freeSpace))
+      }
+    }
+    return storageVolumes
+  }
+
+  data class VolumeStats(
+    val storageVolume: StorageVolume,
+    val totalSpace: Long = 0,
+    val freeSpace: Long = 0,
+  )
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)

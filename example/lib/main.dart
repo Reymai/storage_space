@@ -67,12 +67,12 @@ class _MyAppState extends State<MyApp> {
                     Column(
                       children: [
                         Text(
-                          '${_storageSpace?.freeSize}',
+                          '${_storageSpace?.usedSize}',
                           style: Theme.of(context).textTheme.headline3,
                         ),
                         if (_storageSpace?.lowOnSpace != true) ...[
                           Text(
-                            'Remaining',
+                            'Used',
                             style: Theme.of(context).textTheme.headline6,
                           ),
                         ],
