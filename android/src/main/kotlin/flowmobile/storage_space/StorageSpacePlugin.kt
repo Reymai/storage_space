@@ -59,10 +59,21 @@ public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
           result.success(freeSpace)
         }
         "getTotalSpace" -> {
-          // using getTotalSpace() get total space of internal storage
           val storageStat = getStorageStats()
           val totalSpace = storageStat.first().totalSpace
           result.success(totalSpace)
+        }
+        "getAppUsedSpace" -> {
+          val storageStat = getStorageStats().first()
+          val appUsedSpace = storageStat.appUsedSpace
+          val userDataSpace = storageStat.userDataSpace
+          val cacheSpace = storageStat.cacheSpace
+
+          result.success(mapOf(
+            "appUsedSpace" to appUsedSpace,
+            "userDataSpace" to userDataSpace,
+            "cacheSpace" to cacheSpace,
+          ))
         }
         else -> {
           result.notImplemented()
@@ -83,17 +94,25 @@ public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
       } else {
         val totalSpace: Long
         val freeSpace: Long
+        val appUsedSpace: Long
+        val userDataSpace: Long
+        val cacheSpace: Long
+
+        val storageStatsManager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+        val uuid = StorageManager.UUID_DEFAULT
+        val packageStats = storageStatsManager.queryStatsForPackage(uuid, context.packageName, Process.myUserHandle())
+        appUsedSpace = packageStats.appBytes
+        cacheSpace = packageStats.cacheBytes
+        userDataSpace =  packageStats.dataBytes - cacheSpace
 
         if (storageVolume.isPrimary) {
-          val uuid = StorageManager.UUID_DEFAULT
-          val storageStatsManager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
-          totalSpace = storageStatsManager.getTotalBytes(uuid) / 1
+          totalSpace = storageStatsManager.getTotalBytes(uuid)
           freeSpace = storageStatsManager.getFreeBytes(uuid)
         } else {
           totalSpace = file.totalSpace
           freeSpace = file.freeSpace
         }
-        storageVolumes.add(VolumeStats(storageVolume, totalSpace, freeSpace))
+        storageVolumes.add(VolumeStats(storageVolume, totalSpace, freeSpace, appUsedSpace, userDataSpace, cacheSpace))
       }
     }
     return storageVolumes
@@ -103,6 +122,9 @@ public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
     val storageVolume: StorageVolume,
     val totalSpace: Long = 0,
     val freeSpace: Long = 0,
+    val appUsedSpace: Long = 0,
+    val userDataSpace: Long = 0,
+    val cacheSpace: Long = 0,
   )
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {

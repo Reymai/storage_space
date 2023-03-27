@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:storage_space/src/AppSpaceInfo.dart';
 
 class StorageSpace {
   /// Free space in Bytes
@@ -11,6 +12,9 @@ class StorageSpace {
 
   /// Total space in Bytes
   int total;
+
+  /// Class to hold the App specific space info in Bytes
+  AppSpaceInfo? appSpaceInfo;
 
   /// Usage as a percentage
   late int usagePercent;
@@ -27,6 +31,15 @@ class StorageSpace {
   /// Total space in a Human Readable format
   late String totalSize;
 
+  /// App used space in a Human Readable format
+  late String appUsedSpaceSize;
+
+  /// Cache space in a Human Readable format
+  late String cacheSpaceSize;
+
+  /// User data space in a Human Readable format
+  late String userDataSpaceSize;
+
   /// Threshold in Bytes for showing `lowOnSpace`
   late int lowOnSpaceThreshold;
 
@@ -39,6 +52,7 @@ class StorageSpace {
   StorageSpace({
     required this.free,
     required this.total,
+    required this.appSpaceInfo,
     required this.lowOnSpaceThreshold,
     required this.fractionDigits,
   }) {
@@ -46,7 +60,11 @@ class StorageSpace {
     freeSize = _toHuman(free, fractionDigits);
     totalSize = _toHuman(total, fractionDigits);
     usedSize = _toHuman(used, fractionDigits);
-    print('freeSize: $total');
+    appUsedSpaceSize =
+        _toHuman(appSpaceInfo?.appUsedSpace ?? 0, fractionDigits);
+    cacheSpaceSize = _toHuman(appSpaceInfo?.cacheSpace ?? 0, fractionDigits);
+    userDataSpaceSize =
+        _toHuman(appSpaceInfo?.userDataSpace ?? 0, fractionDigits);
     usageValue = used / total;
     usagePercent = (usageValue * 100).round();
     lowOnSpace = free <= lowOnSpaceThreshold;
@@ -63,9 +81,12 @@ Future<StorageSpace> getStorageSpace({
 }) async {
   int free = await _invokeMethodInt('getFreeSpace');
   int total = await _invokeMethodInt('getTotalSpace');
+  AppSpaceInfo appSpaceInfo =
+      AppSpaceInfo.fromMap(await _invokeMethodInt('getAppUsedSpace'));
   return StorageSpace(
     free: free,
     total: total,
+    appSpaceInfo: appSpaceInfo,
     lowOnSpaceThreshold: lowOnSpaceThreshold,
     fractionDigits: fractionDigits,
   );
@@ -73,9 +94,12 @@ Future<StorageSpace> getStorageSpace({
 
 /// Makes a platform method call and returns an integer
 MethodChannel _channel = const MethodChannel('storage_space');
-Future<int> _invokeMethodInt(String method) async {
+Future<dynamic> _invokeMethodInt(String method) async {
   var result = await _channel.invokeMethod(method);
-  return int.parse(result.toString());
+  if (result.runtimeType == int) {
+    return int.parse(result.toString());
+  }
+  return result;
 }
 
 /// Units used for the `_toHuman` method
