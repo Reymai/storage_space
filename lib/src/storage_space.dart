@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:storage_space/src/AppSpaceInfo.dart';
+import 'package:storage_space/storage_space.dart';
 
 class StorageSpace {
   /// Free space in Bytes
