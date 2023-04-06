@@ -52,27 +52,21 @@ public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
 
   @RequiresApi(Build.VERSION_CODES.O)
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+    val storageStat = getStorageStats()
+
     when (call.method) {
-        "getFreeSpace" -> {
-          val storageStat = getStorageStats()
+        "getLocalStorageStatistic" -> {
           val freeSpace = storageStat.first().freeSpace
-          result.success(freeSpace)
-        }
-        "getTotalSpace" -> {
-          val storageStat = getStorageStats()
-          val totalSpace = storageStat.first().totalSpace
-          result.success(totalSpace)
+          result.success(mapOf(
+            "free" to freeSpace,
+            "total" to storageStat.first().totalSpace,
+          ))
         }
         "getAppUsedSpace" -> {
-          val storageStat = getStorageStats().first()
-          val appUsedSpace = storageStat.appUsedSpace
-          val userDataSpace = storageStat.userDataSpace
-          val cacheSpace = storageStat.cacheSpace
-
           result.success(mapOf(
-            "appUsedSpace" to appUsedSpace,
-            "userDataSpace" to userDataSpace,
-            "cacheSpace" to cacheSpace,
+            "appUsedSpace" to storageStat.first().appUsedSpace,
+            "userDataSpace" to storageStat.first().userDataSpace,
+            "cacheSpace" to storageStat.first().cacheSpace,
           ))
         }
         else -> {
@@ -86,33 +80,35 @@ public class StorageSpacePlugin: FlutterPlugin, MethodCallHandler {
     val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
     val extDirs = Environment.getExternalStorageDirectory().listFiles()
     val storageVolumes = mutableListOf<VolumeStats>()
-    extDirs.forEach {
-      file ->
-      val storageVolume = storageManager.getStorageVolume(file)
-      if (storageVolume == null) {
-        Log.d("StorageSpacePlugin", "Could not get storage volume for ${file.path}")
-      } else {
-        val totalSpace: Long
-        val freeSpace: Long
-        val appUsedSpace: Long
-        val userDataSpace: Long
-        val cacheSpace: Long
-
-        val storageStatsManager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
-        val uuid = StorageManager.UUID_DEFAULT
-        val packageStats = storageStatsManager.queryStatsForPackage(uuid, context.packageName, Process.myUserHandle())
-        appUsedSpace = packageStats.appBytes
-        cacheSpace = packageStats.cacheBytes
-        userDataSpace =  packageStats.dataBytes - cacheSpace
-
-        if (storageVolume.isPrimary) {
-          totalSpace = storageStatsManager.getTotalBytes(uuid)
-          freeSpace = storageStatsManager.getFreeBytes(uuid)
+    run breakable@{
+      extDirs.forEach { file ->
+        val storageVolume = storageManager.getStorageVolume(file)
+        if (storageVolume == null) {
+          Log.d("StorageSpacePlugin", "Could not get storage volume for ${file.path}")
         } else {
-          totalSpace = file.totalSpace
-          freeSpace = file.freeSpace
+          val totalSpace: Long
+          val freeSpace: Long
+          val appUsedSpace: Long
+          val userDataSpace: Long
+          val cacheSpace: Long
+
+          val storageStatsManager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+          val uuid = StorageManager.UUID_DEFAULT
+          val packageStats = storageStatsManager.queryStatsForPackage(uuid, context.packageName, Process.myUserHandle())
+          appUsedSpace = packageStats.appBytes
+          cacheSpace = packageStats.cacheBytes
+          userDataSpace =  packageStats.dataBytes - cacheSpace
+
+          if (storageVolume.isPrimary) {
+            totalSpace = storageStatsManager.getTotalBytes(uuid)
+            freeSpace = storageStatsManager.getFreeBytes(uuid)
+          } else {
+            totalSpace = file.totalSpace
+            freeSpace = file.freeSpace
+          }
+          storageVolumes.add(VolumeStats(storageVolume, totalSpace, freeSpace, appUsedSpace, userDataSpace, cacheSpace))
+          return@breakable
         }
-        storageVolumes.add(VolumeStats(storageVolume, totalSpace, freeSpace, appUsedSpace, userDataSpace, cacheSpace))
       }
     }
     return storageVolumes

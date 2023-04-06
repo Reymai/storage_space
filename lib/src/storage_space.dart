@@ -79,13 +79,13 @@ Future<StorageSpace> getStorageSpace({
   /// Number of digits to use for the Human Readable values
   required int fractionDigits,
 }) async {
-  int free = await _invokeMethodInt('getFreeSpace');
-  int total = await _invokeMethodInt('getTotalSpace');
+  Map<dynamic, dynamic> localStorageStatistic =
+      await _invokeMethodInt('getLocalStorageStatistic');
   AppSpaceInfo appSpaceInfo =
       AppSpaceInfo.fromMap(await _invokeMethodInt('getAppUsedSpace'));
   return StorageSpace(
-    free: free,
-    total: total,
+    free: localStorageStatistic['free']!,
+    total: localStorageStatistic['total']!,
     appSpaceInfo: appSpaceInfo,
     lowOnSpaceThreshold: lowOnSpaceThreshold,
     fractionDigits: fractionDigits,
