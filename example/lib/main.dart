@@ -67,7 +67,7 @@ class _MyAppState extends State<MyApp> {
                     Column(
                       children: [
                         Text(
-                          '${_storageSpace?.appSpaceInfo!.totalAppUsedSpace!}',
+                          '${_storageSpace?.totalSize}',
                           style: Theme.of(context).textTheme.headline3,
                         ),
                         if (_storageSpace?.lowOnSpace != true) ...[
