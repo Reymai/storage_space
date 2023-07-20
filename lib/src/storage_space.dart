@@ -85,14 +85,9 @@ Future<StorageSpace> getStorageSpace({
 
   Map<dynamic, dynamic>? localStorageStatistic;
   AppSpaceInfo? appSpaceInfo;
-  if (Platform.isIOS) {
-    free = await _invokeMethodInt('getFreeSpace');
-    total = await _invokeMethodInt('getTotalSpace');
-  } else {
-    localStorageStatistic = await _invokeMethodInt('getLocalStorageStatistic');
-    appSpaceInfo =
-        AppSpaceInfo.fromMap(await _invokeMethodInt('getAppUsedSpace'));
-  }
+  localStorageStatistic = await _invokeMethodInt('getLocalStorageStatistic');
+  appSpaceInfo =
+      AppSpaceInfo.fromMap(await _invokeMethodInt('getAppUsedSpace'));
   return StorageSpace(
     free: free ?? localStorageStatistic!['free']!,
     total: total ?? localStorageStatistic!['total']!,

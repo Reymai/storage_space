@@ -20,7 +20,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void initStorageSpace() async {
-    StorageSpace storageSpace = await getStorageSpace(
+    StorageSpace? storageSpace = await getStorageSpace(
       lowOnSpaceThreshold: 2 * 1024 * 1024 * 1024, // 2GB
       fractionDigits: 1,
     );
@@ -67,7 +67,7 @@ class _MyAppState extends State<MyApp> {
                     Column(
                       children: [
                         Text(
-                          '${_storageSpace?.totalSize}',
+                          '${int.parse(_storageSpace?.appSpaceInfo?.totalAppUsedSpace.toString() ?? '0')}',
                           style: Theme.of(context).textTheme.headline3,
                         ),
                         if (_storageSpace?.lowOnSpace != true) ...[

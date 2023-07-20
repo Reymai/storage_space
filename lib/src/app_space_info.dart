@@ -14,9 +14,9 @@ class AppSpaceInfo {
 
   factory AppSpaceInfo.fromMap(Map<dynamic, dynamic> map) {
     return AppSpaceInfo(
-      appUsedSpace: map['appUsedSpace'] as int,
-      cacheSpace: map['cacheSpace'] as int,
-      userDataSpace: map['userDataSpace'] as int,
+      appUsedSpace: map['appUsedSpace'] as int? ?? 0,
+      cacheSpace: map['cacheSpace'] as int? ?? 0,
+      userDataSpace: map['userDataSpace'] as int? ?? 0,
     );
   }
 
