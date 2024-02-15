@@ -24,4 +24,6 @@ flutter:
         pluginClass: StorageSpacePlugin
       ios:
         pluginClass: StorageSpacePlugin
+      macos:
+        pluginClass: StorageSpacePlugin
 
